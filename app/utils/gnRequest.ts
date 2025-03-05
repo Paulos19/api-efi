@@ -7,6 +7,7 @@ let accessToken: string | null = null;
 const isDev = process.env.NODE_ENV !== "production";
 
 const certPath = path.resolve(process.cwd(), `certs/${process.env.GN_CERT}`);
+if (isDev) console.log("🔍 [Modo Dev] Certificado carregado de:", certPath);
 const cert = fs.readFileSync(certPath);
 const agent = new https.Agent({ pfx: cert, passphrase: "" });
 
