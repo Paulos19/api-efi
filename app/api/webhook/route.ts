@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface PixTransaction {
+  txid: string;
+  valor: string;
+}
+
+interface WebhookBody {
+  pix?: PixTransaction[];
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body: WebhookBody = await req.json();
     console.log("📥 [Webhook Recebido] Dados:", body);
 
-    // Simulação de processamento do Pix recebido
     if (body.pix) {
-      body.pix.forEach((pix: any) => {
+      body.pix.forEach((pix: PixTransaction) => {
         console.log(`✅ [Pix Recebido] ID: ${pix.txid}, Valor: R$${pix.valor}`);
       });
     }
