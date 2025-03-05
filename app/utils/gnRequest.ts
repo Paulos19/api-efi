@@ -13,7 +13,7 @@ const cert = fs.readFileSync(certPath);
 const agent = new https.Agent({ pfx: cert, passphrase: "" });
 
 const authenticate = async () => {
-  console.log("🔑 [Autenticação] Gerando novo token...");
+  console.log("🔑 Autenticação: Gerando novo token...");
   const credentials = Buffer.from(
     `${process.env.GN_CLIENT_ID_DEV}:${process.env.GN_CLIENT_SECRET_DEV}`
   ).toString("base64");
