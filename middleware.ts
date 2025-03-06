@@ -1,35 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
-  if (!req.nextUrl.pathname.startsWith("/api/webhook")) {
-    return NextResponse.next();
-  }
-
-  console.log("🔒 [Middleware] Validando requisição para o Webhook...");
-
-  // Definir cabeçalhos CORS para permitir requisições externas
   const res = NextResponse.next();
+
+  // Adicionando os cabeçalhos CORS
   res.headers.set("Access-Control-Allow-Origin", "*");
   res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // Verificar se é uma requisição OPTIONS (preflight)
+  // Verificar se a requisição é do tipo OPTIONS (preflight)
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: res.headers });
   }
 
-  // Simulação de autenticação: pode validar um token no cabeçalho Authorization
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
-    console.log("❌ [Middleware] Acesso negado ao Webhook.");
-    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+  // Se a requisição for para a API interna (webhook)
+  if (req.nextUrl.pathname.startsWith("/api/webhook")) {
+    console.log("🔒 [Middleware] Validando requisição para o Webhook...");
+
+    // Simulação de autenticação: pode validar um token no cabeçalho Authorization
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+      console.log("❌ [Middleware] Acesso negado ao Webhook.");
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    }
+
+    console.log("✅ [Middleware] Requisição autorizada para Webhook.");
   }
 
-  console.log("✅ [Middleware] Requisição autorizada.");
+  // Se a requisição for para a API externa de verificação de status de pagamento
+  if (req.url.includes("https://api-efi.vercel.app/api/checkPaymentStatus")) {
+    console.log("🔒 [Middleware] Validando requisição para a API externa de pagamento...");
+
+    // Não há autenticação extra para a API externa, então apenas retornamos a resposta com CORS
+    console.log("✅ [Middleware] Requisição autorizada para a API externa de pagamento.");
+  }
+
   return res;
 }
 
-// Aplica o middleware para todas as requisições no webhook
+// Aplica o middleware para todas as requisições que começam com /api/webhook ou para a API externa de pagamento
 export const config = {
-  matcher: "/api/webhook/:path*",
+  matcher: ["/api/webhook/:path*", "https://api-efi.vercel.app/api/checkPaymentStatus"],
 };
