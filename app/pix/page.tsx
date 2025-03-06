@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Image from "next/image";
 
 export default function PixDisplay() {
   const [qrcode, setQrcode] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export default function PixDisplay() {
   return (
     <div className="p-4 text-center">
       <h2 className="text-xl font-bold mb-4">Pagamento via Pix</h2>
-      {qrcode ? <img src={qrcode} alt="QR Code Pix" className="mx-auto" /> : <p>Carregando...</p>}
+      {qrcode ? <Image src={qrcode} alt="QR Code Pix" className="mx-auto" /> : <p>Carregando...</p>}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { WebSocketServer } from "ws";
 
 let wss: WebSocketServer | null = null;
 
-export const initializeWebSocket = (server: any) => {
+export const initializeWebSocket = () => {
   if (!wss) {
     wss = new WebSocketServer({ noServer: true });
 
@@ -24,7 +24,7 @@ export const initializeWebSocket = (server: any) => {
   return wss;
 };
 
-// Função para enviar atualizações quando o pagamento for confirmado
+// Função para enviar notificações de pagamento para os clientes conectados
 export const sendPaymentUpdate = (message: string) => {
   if (!wss) {
     console.warn("⚠️ WebSocket Server não inicializado.");
