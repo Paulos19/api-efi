@@ -5,15 +5,16 @@ import Cors from "cors";
 // Inicializando o Prisma Client
 const prisma = new PrismaClient();
 
-// Inicializando o middleware CORS
+// Inicializando o middleware CORS com a configuração correta
 const cors = Cors({
   methods: ["GET", "POST"],
   origin: "http://localhost:3000", // Altere para o domínio de onde sua aplicação frontend será executada
 });
 
-function runMiddleware(req: NextRequest, res: any, fn: Function) {
+// Função para rodar o middleware CORS manualmente no Next.js
+function runMiddleware(req: NextRequest, res: NextResponse) {
   return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
+    cors(req as any, res as any, (result: any) => {
       if (result instanceof Error) {
         return reject(result);
       }
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.next();  // Cria uma instância do NextResponse
 
     // Executar o middleware CORS antes de processar a requisição
-    await runMiddleware(req, res, cors);
+    await runMiddleware(req, res);
 
     const body = await req.json();
     const { txid } = body;
