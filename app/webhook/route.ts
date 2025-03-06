@@ -8,30 +8,24 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log("📥 [Webhook Pix Recebido]:", JSON.stringify(body, null, 2));
 
+    // Verifique se a estrutura do corpo contém o que é esperado
     const pixData = body.pix[0];
-    const { endToEndId, txid, valor, chave, horario, status } = pixData; // Assumindo que o status vem no payload do webhook
+    const { endToEndId, txid, valor, chave, horario, status } = pixData;
 
-    // Verifique se o status foi enviado no payload
+    // Verifique se o status foi fornecido, caso contrário, retorne um erro
     if (!status) {
       return NextResponse.json({ error: "Status de pagamento não fornecido" }, { status: 400 });
     }
 
-    // Atualize ou crie uma nova entrada no banco de dados
-    await prisma.pixWebhook.upsert({
-      where: { txid: txid },
-      update: {
-        status,  // Atualiza o status do pagamento
-        valor: parseFloat(valor),
-        chave,
-        horario: new Date(horario),
-      },
-      create: {
+    // Criação do registro no banco de dados
+    await prisma.pixWebhook.create({
+      data: {
         endToEndId,
         txid,
         valor: parseFloat(valor),
         chave,
         horario: new Date(horario),
-        status,  // Salva o status do pagamento ao criar a entrada
+        status,  // Salvando o status da transação
       },
     });
 
