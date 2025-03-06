@@ -15,5 +15,4 @@ model PixWebhook {
   chave      String
   horario    DateTime
   createdAt  DateTime @default(now())
-  status     String   @default("pending")
 }
