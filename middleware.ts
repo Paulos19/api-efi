@@ -40,5 +40,5 @@ export function middleware(req: NextRequest) {
 
 // Aplica o middleware para todas as requisições que começam com /api/webhook ou para a API externa de pagamento
 export const config = {
-  matcher: ["/api/webhook/:path*", "https://api-efi.vercel.app/api/checkPaymentStatus"],
+  matcher: ["/webhook/:path*", "/api/checkPaymentStatus/:path*"],
 };
