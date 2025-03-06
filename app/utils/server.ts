@@ -2,14 +2,14 @@ import { WebSocketServer, WebSocket } from "ws";
 
 let wss: WebSocketServer | null = null;
 
-export function initializeWebSocket(server?: any) {
+export function initializeWebSocket() {
   if (!wss) {
     wss = new WebSocketServer({ noServer: true });
 
     wss.on("connection", (socket: WebSocket) => {
       console.log("🔌 Novo cliente WebSocket conectado.");
 
-      socket.on("message", (message) => {
+      socket.on("message", (message: string) => {
         console.log(`📩 Mensagem recebida: ${message}`);
       });
 
