@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,15 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model PixWebhook {
-  id              Int      @id @default(autoincrement())
-  endToEndId      String   
-  txid            String   @unique   // Certificando-se de que txid seja único
-  valor           Float    
-  chave           String   
-  horario         DateTime 
-  createdAt       DateTime @default(now())
-  status          String   // Novo campo para armazenar o status do pagamento (ex: "Pendente", "Pago")
+  id         Int      @id @default(autoincrement())
+  endToEndId String
+  txid       String   @unique
+  valor      Float
+  chave      String
+  horario    DateTime
+  createdAt  DateTime @default(now())
+  status     String   @default("pending")
 }
-
