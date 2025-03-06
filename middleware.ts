@@ -27,18 +27,10 @@ export function middleware(req: NextRequest) {
     console.log("✅ [Middleware] Requisição autorizada para Webhook.");
   }
 
-  // Se a requisição for para a API externa de verificação de status de pagamento
-  if (req.url.includes("https://api-efi.vercel.app/api/checkPaymentStatus")) {
-    console.log("🔒 [Middleware] Validando requisição para a API externa de pagamento...");
-
-    // Não há autenticação extra para a API externa, então apenas retornamos a resposta com CORS
-    console.log("✅ [Middleware] Requisição autorizada para a API externa de pagamento.");
-  }
-
   return res;
 }
 
 // Aplica o middleware para todas as requisições que começam com /api/webhook ou para a API externa de pagamento
 export const config = {
-  matcher: ["/webhook/:path*", "/api/checkPaymentStatus/:path*"],
+  matcher: ["/webhook/:path*"],
 };
