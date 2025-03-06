@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendPaymentUpdate } from "@/app/utils/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -21,10 +20,6 @@ export async function POST(req: NextRequest) {
         horario: new Date(horario),
       },
     });
-
-    // Enviar notificação WebSocket para os clientes conectados
-    sendPaymentUpdate(JSON.stringify({ status: "Pago", valor }));
-
     return NextResponse.json({ message: "Webhook processado e salvo com sucesso" });
   } catch (error) {
     console.error("❌ [Erro Webhook]:", error);
