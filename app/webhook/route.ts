@@ -1,26 +1,34 @@
 // app/api/webhook/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
-    // Lê o corpo da requisição (os dados enviados pelo webhook)
+    // Lê o corpo da requisição
     const body = await req.json();
-    
-    // Loga os dados recebidos no console para monitoramento
     console.log("📥 [Webhook Pix Recebido]:", JSON.stringify(body, null, 2));
 
-    // Aqui você pode processar os dados, salvar no banco, enviar notificações, etc.
-    // Exemplo de processamento adicional (opcional)
-    // if (body.status === 'PAID') { 
-    //   // Lógica de processamento de pagamento pago
-    // }
+    // Processa o webhook e salva no banco de dados
+    const pixData = body.pix[0]; // Supondo que seja o primeiro objeto em `pix`
+    const { endToEndId, txid, valor, chave, horario } = pixData;
 
-    // Responde com sucesso
-    return NextResponse.json({ message: "Webhook processado com sucesso" });
+    // Armazenar os dados no banco
+    await prisma.pixWebhook.create({
+      data: {
+        endToEndId,
+        txid,
+        valor: parseFloat(valor),
+        chave,
+        horario: new Date(horario),
+      },
+    });
+
+    return NextResponse.json({ message: "Webhook processado e salvo com sucesso" });
 
   } catch (error) {
-    // Caso ocorra algum erro, loga o erro e responde com status 500
     console.error("❌ [Erro Webhook]:", error);
     return NextResponse.json({ error: "Erro ao processar o webhook" }, { status: 500 });
   }
