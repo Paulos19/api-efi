@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sendPaymentUpdate } from "@/app/utils/server";
 import { PrismaClient } from "@prisma/client";
-import { sendPaymentUpdate } from "../utils/websocket";
 
 const prisma = new PrismaClient();
 
@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log(`🔔 [WebSocket] Enviando pagamento confirmado - TXID: ${txid}`);
-    sendPaymentUpdate(JSON.stringify({ txid, valor })); // Enviar apenas os dados necessários
+    // Enviar notificação WebSocket para os clientes conectados
+    sendPaymentUpdate(JSON.stringify({ status: "Pago", valor }));
 
-    return NextResponse.json({ message: "Webhook processado com sucesso" });
+    return NextResponse.json({ message: "Webhook processado e salvo com sucesso" });
   } catch (error) {
     console.error("❌ [Erro Webhook]:", error);
     return NextResponse.json({ error: "Erro ao processar o webhook" }, { status: 500 });

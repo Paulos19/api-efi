@@ -1,12 +1,9 @@
-import { GNRequest } from "@/app/utils/gnRequest";
 import { NextResponse } from "next/server";
+import { GNRequest } from "@/app/utils/gnRequest";
 
 export async function GET() {
-  console.log("📢 [GET] /api/pix - Iniciando criação do Pix");
-
   try {
     const reqGN = await GNRequest();
-    console.log("✅ [API] Cliente autenticado!");
 
     const dataCob = {
       calendario: { expiracao: 3600 },
@@ -16,15 +13,12 @@ export async function GET() {
     };
 
     const cobResponse = await reqGN.post("/v2/cob", dataCob);
-    console.log("✅ [API] Cobrança criada:", cobResponse.data);
-
     const qrcodeResponse = await reqGN.get(`/v2/loc/${cobResponse.data.loc.id}/qrcode`);
-    console.log("✅ [API] QR Code gerado!");
 
-    return NextResponse.json({
-      qrcodeImage: qrcodeResponse.data.imagemQrcode,
-      txid: cobResponse.data.txid, // Enviar o TXID para acompanhar o pagamento
-    });
+    // Criar resposta com CORS habilitado
+    const res = NextResponse.json({ qrcodeImage: qrcodeResponse.data.imagemQrcode });
+    res.headers.set("Access-Control-Allow-Origin", "*");
+    return res;
   } catch (error) {
     console.error("❌ [Erro API] Falha ao gerar Pix:", error);
     return NextResponse.json({ error: "Erro ao gerar o Pix" }, { status: 500 });
