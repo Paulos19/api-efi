@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getSocketServer } from "@/lib/socket";
+import { createServer } from "http"; // Criando servidor HTTP
 
 const prisma = new PrismaClient();
+
+// Crie o servidor HTTP manualmente
+const server = createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Hello World");
+});
+
+// Passa o servidor para o WebSocket
+const io = getSocketServer(server);
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +37,6 @@ export async function POST(req: NextRequest) {
     console.log(`✅ [Pagamento Recebido] TXID: ${txid}, Valor: ${valor}`);
 
     // Emitir evento WebSocket
-    const io = getSocketServer(globalThis);
     io?.emit("paymentUpdate", { txid, valor, status: "PAYMENT_RECEIVED" });
 
     return NextResponse.json({ message: "Pagamento processado e notificado" });

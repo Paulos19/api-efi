@@ -1,11 +1,12 @@
 import { Server } from "socket.io";
+import { IncomingMessage, Server as HTTPServer } from "http";
 
 let io: Server | null = null;
 
-export function getSocketServer(server: any) {
+export function getSocketServer(server: HTTPServer) {
   if (!io) {
     io = new Server(server, {
-      cors: { origin: "*" },
+      cors: { origin: "*" }, // Permitir conexões de qualquer origem
     });
 
     io.on("connection", (socket) => {
