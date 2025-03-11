@@ -1,12 +1,16 @@
 import { Server } from "socket.io";
-import { Server as HTTPServer } from "http";
 
 let io: Server | null = null;
 
-export function getSocketServer(server: HTTPServer) {
+export function getSocketServer(server: any) {
   if (!io) {
     io = new Server(server, {
-      cors: { origin: "*" }, // Permitir conexões de qualquer origem
+      cors: {
+        origin: "http://localhost:3000", // Permite conexões apenas do frontend local
+        methods: ["GET", "POST"], // Métodos permitidos
+        allowedHeaders: ["my-custom-header"], // Cabeçalhos permitidos (opcional)
+        credentials: true, // Habilita o envio de cookies, se necessário
+      },
     });
 
     io.on("connection", (socket) => {
