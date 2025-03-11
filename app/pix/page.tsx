@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Image from "next/image";
 
-export default function PixDisplay() {
+export default function PixPage() {
   const [qrcode, setQrcode] = useState<string | null>(null);
 
   useEffect(() => {
