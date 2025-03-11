@@ -11,18 +11,27 @@ export async function POST(req: NextRequest) {
     const pixData = body.pix[0];
     const { endToEndId, txid, valor, chave, horario } = pixData;
 
-    await prisma.pixWebhook.create({
-      data: {
+    // Atualiza o status para "PAYMENT_RECEIVED" após receber o pagamento
+    const updatedPayment = await prisma.pixWebhook.upsert({
+      where: { txid },
+      update: {
+        status: "PAYMENT_RECEIVED",
+        valor: parseFloat(valor),
+        horario: new Date(horario),
+      },
+      create: {
         endToEndId,
         txid,
         valor: parseFloat(valor),
         chave,
         horario: new Date(horario),
+        status: "PAYMENT_RECEIVED",
       },
     });
-    return NextResponse.json({ message: "Webhook processado e salvo com sucesso" });
+
+    return NextResponse.json({ message: "Webhook processado e pagamento recebido" });
   } catch (error) {
     console.error("❌ [Erro Webhook]:", error);
     return NextResponse.json({ error: "Erro ao processar o webhook" }, { status: 500 });
   }
-} 
+}
