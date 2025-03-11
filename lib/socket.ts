@@ -1,8 +1,9 @@
 import { Server } from "socket.io";
+import http from "http";
 
 let io: Server | null = null;
 
-export function getSocketServer(server: any) {
+export function getSocketServer(server: http.Server) {
   if (!io) {
     io = new Server(server, {
       cors: {
