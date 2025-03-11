@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { IncomingMessage, Server as HTTPServer } from "http";
+import { Server as HTTPServer } from "http";
 
 let io: Server | null = null;
 
