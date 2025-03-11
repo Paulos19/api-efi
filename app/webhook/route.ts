@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const { endToEndId, txid, valor, chave, horario } = pixData;
 
     // Atualiza o status para "PAYMENT_RECEIVED" após receber o pagamento
-    const updatedPayment = await prisma.pixWebhook.upsert({
+    await prisma.pixWebhook.upsert({
       where: { txid },
       update: {
         status: "PAYMENT_RECEIVED",
