@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import WebSocket, { WebSocketServer } from "ws"; // Importando WebSocket
+import { NextRequest, NextResponse } from "next/server";
+import WebSocket, { WebSocketServer } from "ws";
+import http from "http"; // Importando http.Server
 
 const prisma = new PrismaClient();
 
@@ -54,8 +55,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Inicia o servidor WebSocket
-export function initializeWebSocket(server: any) {
+// Atualizando o tipo do parâmetro para http.Server
+export function initializeWebSocket(server: http.Server) {
   // Criando o WebSocket Server com o servidor HTTP
   wss = new WebSocketServer({ server });
 
