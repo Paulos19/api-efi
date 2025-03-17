@@ -23,7 +23,7 @@ export default function PixPage() {
   return (
     <div className="p-4 text-center">
       <h2 className="text-xl font-bold mb-4">Pagamento via Pix</h2>
-      {qrcode ? <Image src={qrcode} alt="QR Code Pix" className="mx-auto" /> : <p>Carregando...</p>}
+      {qrcode ? <Image src={qrcode} width={150} height={150} alt="QR Code Pix" className="mx-auto" /> : <p>Carregando...</p>}
     </div>
   );
 }

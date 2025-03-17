@@ -7,7 +7,7 @@ export async function GET() {
 
     const dataCob = {
       calendario: { expiracao: 3600 },
-      valor: { original: "0.10" },
+      valor: { original: "0.01" },
       chave: process.env.GN_PIX_KEY,
       solicitacaoPagador: "Cobrança dos serviços prestados.",
     };
