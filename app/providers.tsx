@@ -1,6 +1,6 @@
 'use client';
 
-import { configureAbly } from '@ably-labs/react-hooks';
+import {  configureAbly } from '@ably-labs/react-hooks';
 import * as Ably from 'ably';
 import { AblyProvider } from 'ably/react';
 
@@ -9,11 +9,11 @@ const ablyClientId = process.env.NEXT_PUBLIC_ABLY_CLIENT_ID ?? null;
 
 configureAbly({
   key: ablyKey,
-  clientId: ablyClientId as string,
+  clientId: ablyClientId!,
 });
 
 const client = new Ably.Realtime({
-  key: ablyKey!,
+  key: ablyKey,
   clientId: ablyClientId!,
 });
 
