@@ -1,81 +1,73 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { GNRequest } from '@/app/utils/gnRequest'; // Verifique se este import está correto
+import { NextRequest, NextResponse } from "next/server"; // Importar NextRequest
+import { GNRequest } from "@/app/utils/gnRequest";
+import { PrismaClient } from '@prisma/client'; // Importar Prisma Client
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(); // Instanciar Prisma Client
 
+// Alterar de GET para POST e adicionar 'req' como parâmetro
 export async function POST(req: NextRequest) {
-  // Espera 'valor' e 'characterName'
-  const { valor, characterName } = await req.json();
-
-  // Validação básica
-  if (!valor || typeof valor !== 'string' || parseFloat(valor) <= 0) {
-    return NextResponse.json({ message: 'Valor inválido' }, { status: 400 });
-  }
-  // Valida characterName como string não vazia
-  if (!characterName || typeof characterName !== 'string' || characterName.trim() === '') {
-    return NextResponse.json({ message: 'Nome do personagem inválido' }, { status: 400 });
-  }
-
-  const reqGN = await GNRequest();
-
-  const dataCob = {
-    calendario: {
-      expiracao: 3600,
-    },
-    valor: {
-      original: valor,
-    },
-    chave: process.env.GN_CHAVE_PIX,
-    // Atualiza solicitação do pagador
-    solicitacaoPagador: `Pagamento para personagem: ${characterName}`,
-    infoAdicionais: [
-      {
-        nome: 'Produto',
-        valor: 'Coins Virtuais',
-      },
-      {
-        // Usa 'characterName' como chave na informação adicional
-        nome: 'characterName',
-        valor: characterName, // Passa o nome diretamente
-      },
-    ],
-  };
-
   try {
-    const cobResponse = await reqGN.post('/v2/cob', dataCob);
-    const cobrancaId = cobResponse.data.txid;
+    // Ler o corpo da requisição
+    const body = await req.json();
+    const { valor, characterName } = body;
 
-    const qrCodeResponse = await reqGN.get(`/v2/loc/${cobResponse.data.loc.id}/qrcode`);
+    // Validar se os dados necessários foram recebidos
+    if (!valor || !characterName) {
+      return NextResponse.json({ error: "Valor e characterName são obrigatórios" }, { status: 400 });
+    }
 
-    // Salva no Prisma (PostgreSQL) - Removido characterId, pode adicionar characterName se quiser
-    await prisma.pixWebhook.create({
-      data: {
-        txid: cobrancaId,
-        status: 'PENDING',
-        valor: parseFloat(valor),
-        payload: JSON.stringify(cobResponse.data),
-        // characterId: characterId, // Removido - ou substitua por characterName se o schema permitir
-      },
+    const reqGN = await GNRequest();
+
+    const dataCob = {
+      calendario: { expiracao: 3600 },
+      valor: { original: valor }, // Usar o valor recebido
+      chave: process.env.GN_PIX_KEY,
+      solicitacaoPagador: `Compra de coins para ${characterName}`, // Mensagem personalizada
+      infoAdicionais: [ // Adicionar informações extras para o webhook
+        { nome: "characterName", valor: characterName }
+      ]
+    };
+
+    const cobResponse = await reqGN.post("/v2/cob", dataCob);
+    const locId = cobResponse.data.loc.id;
+    const txid = cobResponse.data.txid; // Obter o txid da resposta
+
+    // Salvar o txid e characterName no banco de dados (PostgreSQL via Prisma)
+    // Isso ajuda a associar o pagamento ao personagem antes mesmo do webhook
+    try {
+      await prisma.pixWebhook.create({
+        data: {
+          txid: txid,
+          endToEndId: '', // Será preenchido pelo webhook
+          valor: parseFloat(valor),
+          chave: process.env.GN_PIX_KEY || 'chave_padrao', // Use a chave ou um valor padrão
+          horario: new Date(), // Horário da criação da cobrança
+          status: 'PENDING', // Status inicial
+          // Adicione um campo para characterName se o seu modelo Prisma tiver
+          // characterName: characterName, // Descomente se tiver o campo
+        }
+      });
+      console.log(`[API Pix] Cobrança criada e registrada no DB para txid: ${txid}, character: ${characterName}`);
+    } catch (dbError: any) {
+      // Logar o erro mas continuar, pois o QR code ainda pode ser gerado
+      console.error(`[API Pix] Erro ao salvar cobrança inicial no DB para txid ${txid}:`, dbError.message);
+    }
+
+    const qrcodeResponse = await reqGN.get(`/v2/loc/${locId}/qrcode`);
+
+    // Criar resposta com CORS habilitado e retornar qrcode e txid
+    const res = NextResponse.json({
+      qrcode: qrcodeResponse.data.imagemQrcode, // Manter 'qrcode' como chave para compatibilidade com o frontend
+      txid: txid // Retornar o txid
     });
+    res.headers.set("Access-Control-Allow-Origin", "*"); // Manter CORS se necessário
+    return res;
 
-    console.log('Cobrança PIX criada para:', characterName, 'TxID:', cobrancaId);
-
-    return NextResponse.json({
-      txid: cobrancaId,
-      qrcode: qrCodeResponse.data.imagemQrcode,
-    });
-
-  } catch (error: any) {
-    console.error('Erro ao criar cobrança PIX:', error.response?.data || error.message);
-    return NextResponse.json(
-      { message: 'Erro ao criar cobrança PIX', error: error.response?.data || error.message },
-      { status: 500 }
-    );
+  } catch (error: any) { // Capturar erro como 'any' para acessar 'response'
+    console.error("❌ [Erro API] Falha ao gerar Pix:", error.response?.data || error.message || error);
+    // Retornar uma mensagem de erro mais detalhada se disponível
+    const errorMessage = error.response?.data?.mensagem || error.response?.data?.title || "Erro ao gerar o Pix";
+    const errorStatus = error.response?.status || 500;
+    return NextResponse.json({ error: errorMessage }, { status: errorStatus });
   }
 }
-
-// GET handler (se existir, mantenha como está ou remova se não for usado)
-// export async function GET() {
-//   // ... seu código GET existente ...
-// }
