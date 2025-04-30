@@ -7,25 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Modelo para armazenar informações de webhooks PIX recebidos
-model PixWebhook {
-  id            String    @id @default(uuid())
-  endToEndId    String?   @unique // Tornar opcional se puder ser nulo inicialmente
-  txid          String    @unique
-  valor         Float
-  chave         String?   // Tornar opcional se puder ser nulo
-  status        String    @default("PENDING")
-  horario       DateTime? // Tornar opcional se puder ser nulo
-  createdAt     DateTime  @default(now())
-  characterName String?   // Adicionar este campo (opcional ou String)
-  payload       Json?     // Adicionar campo para guardar o payload completo (opcional)
+enum StatusPix {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
-// Adicione outros modelos aqui, por exemplo, para Characters:
-// model Character {
-//   id     Int     @id @default(autoincrement())
-//   name   String  @unique
-//   coins  Int     @default(0)
-//   // Relação inversa com PixWebhook (opcional)
-//   pixPayments PixWebhook[]
-// }
+model PixWebhook {
+  id            String     @id @default(uuid())
+  endToEndId    String?    @unique
+  txid          String     @unique
+  valor         Float
+  chave         String?
+  status        StatusPix  @default(PENDING)
+  horario       DateTime?
+  createdAt     DateTime   @default(now())
+  characterName String?
+  payload       Json?
+  Character     Character? @relation(fields: [characterId], references: [id])
+  characterId   Int?
+
+  @@index([txid, status])
+}
+
+model Character {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  coins       Int          @default(0)
+  pixPayments PixWebhook[]
+}

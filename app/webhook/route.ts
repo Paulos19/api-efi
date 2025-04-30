@@ -1,25 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { run as runSqliteQuery } from '@/lib/sqlite';
-import Ably from "ably";
 
 const prisma = new PrismaClient();
-const ably = new Ably.Rest(process.env.ABLY_API_KEY!);
-
-async function notifyAblyChannel(txid: string, characterName: string) {
-  try {
-    const channel = ably.channels.get(`pix-payments-${txid}`);
-    await channel.publish('payment_confirmed', {
-      txid,
-      characterName,
-      status: 'COMPLETED',
-      timestamp: new Date().toISOString()
-    });
-    console.log(`[Ably] Notificação enviada para o canal pix-payments-${txid}`);
-  } catch (error: any) {
-    console.error(`[Ably] Erro ao publicar no canal:`, error.message);
-  }
-}
 
 export async function POST(req: NextRequest) {
   let txidToLog = 'N/A';
@@ -37,7 +20,7 @@ export async function POST(req: NextRequest) {
       const valorPago = parseFloat(pix.valor);
       const endToEndId = pix.endToEndId;
       const horarioPix = pix.horario ? new Date(pix.horario) : new Date();
-      const status = 'CONCLUIDO';
+      const status = 'COMPLETED';
 
       if (!txid) {
         console.warn('Webhook Pix sem txid:', pix);
@@ -88,7 +71,6 @@ export async function POST(req: NextRequest) {
         );
 
         if (sqliteResult.changes > 0) {
-          await notifyAblyChannel(txid, characterName);
           console.log(`[Webhook] ${characterName} recebeu 100 coins`);
         } else {
           console.warn(`[Webhook] Falha na atualização de coins para ${characterName}`);
