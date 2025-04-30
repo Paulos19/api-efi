@@ -98,8 +98,8 @@ const PurchaseCoins: React.FC = () => {
       console.log('API Response Data:', response.data);
 
       // Verifica se qrCode existe na resposta antes de definir
-      if (response.data && response.data.qrCode) {
-        setQrCode(response.data.qrCode);
+      if (response.data && response.data.qrcode) {
+        setQrCode(response.data.qrcode);
       } else {
         console.error('Campo qrCode não encontrado na resposta da API:', response.data);
         setError('A resposta da API não incluiu um QR Code válido.');
