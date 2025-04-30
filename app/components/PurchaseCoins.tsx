@@ -24,6 +24,7 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
     const [generatedTxid, setGeneratedTxid] = useState<string | null>(null);
 
     const ws = useRef<WebSocket | null>(null);
+    const generatedTxidRef = useRef<string | null>(null);
 
     // Atualiza o nome local quando a prop muda
     useEffect(() => {
@@ -31,50 +32,59 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
     }, [propCharacterName]);
 
     useEffect(() => {
-        const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
+        generatedTxidRef.current = generatedTxid;
+    }, [generatedTxid]);
 
+    useEffect(() => {
+        const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
+    
         if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
             ws.current = new WebSocket(wsUrl);
             const currentWs = ws.current;
 
             currentWs.onopen = () => {
-                setError(null);
+              setError(null);
+              // Reconecta com o último txid gerado
+              if (generatedTxidRef.current) {
+                currentWs.send(JSON.stringify({
+                  type: 'restore_session',
+                  txid: generatedTxidRef.current
+                }));
+              }
             };
 
             currentWs.onclose = (event) => {
-                if (!event.wasClean) {
-                    setError('Conexão com o servidor perdida');
-                }
-            };
-
-            currentWs.onerror = () => {
-                setError('Erro na conexão com o servidor');
+              if (!event.wasClean && paymentStatus !== 'verified') {
+                 setError('Conexão com o servidor perdida');
+              }
             };
 
             currentWs.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-
-                    if (message.type === 'payment_confirmed' && message.txid === generatedTxid) {
-                        setPaymentStatus('verified');
-                        setVerifiedPaymentData({
-                            txid: message.txid,
-                            characterName: localCharacterName
-                        });
-                        setQrCode(null);
-                        setError(null);
-                    }
-                    // ... restante do código do WebSocket
-                } catch (e) {
-                    console.error('Erro ao processar mensagem:', e);
+              try {
+                const message = JSON.parse(event.data);
+                
+                if (message.type === 'payment_confirmed' && message.txid === generatedTxidRef.current) {
+                  setPaymentStatus('verified');
+                  setVerifiedPaymentData({ 
+                    txid: message.txid, 
+                    characterName: localCharacterName 
+                  });
+                  setQrCode(null);
+                  setError(null);
+                  ws.current?.close(1000, 'Payment completed');
                 }
+              } catch (e) {
+                console.error('Erro ao processar mensagem:', e);
+              }
             };
         }
 
         return () => {
+          if (ws.current?.readyState === WebSocket.OPEN && paymentStatus !== 'verified') {
             ws.current?.close();
+          }
         };
-    }, [generatedTxid, localCharacterName]);
+    }, [localCharacterName]); // Removemos a dependência do generatedTxid
 
     const handleGeneratePix = async () => {
         if (!localCharacterName) {
