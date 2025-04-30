@@ -139,7 +139,7 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
                 />
             </div>
 
-            {paymentStatus === 'verified' && (
+            {paymentStatus === 'COMPLETED' && (
                 <div className="mt-4 p-4 bg-green-800 rounded-lg">
                     <p className="text-green-400">✅ Pagamento confirmado para {verifiedPaymentData?.characterName}!</p>
                     <button
