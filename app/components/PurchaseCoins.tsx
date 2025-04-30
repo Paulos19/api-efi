@@ -86,12 +86,15 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
                 characterName: localCharacterName,
                 coins: 100
             });
-            if (response.data.success) {
+            
+            if (response.status === 200) {
                 setPaymentStatus('completed');
                 setError(null);
+            } else {
+                setError('Falha na confirmação: ' + (response.data?.error || 'Erro desconhecido'));
             }
         } catch (err: any) {
-            setError('Erro ao confirmar coins');
+            setError('Erro ao confirmar coins: ' + err.message);
         }
     };
 

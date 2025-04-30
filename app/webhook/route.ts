@@ -66,8 +66,9 @@ export async function POST(req: NextRequest) {
       // Atualizar coins no SQLite
       try {
         const sqliteResult = await runSqliteQuery(
-          'UPDATE characters SET coins = coins + ? WHERE name = ?',
-          [100, characterName]
+            `INSERT OR IGNORE INTO characters (name, coins) VALUES (?, 0);
+             UPDATE characters SET coins = coins + ? WHERE name = ?`,
+            [characterName, 100, characterName]
         );
 
         if (sqliteResult.changes > 0) {
