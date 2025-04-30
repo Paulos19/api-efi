@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
+import { useChannel } from "@ably-labs/react-hooks";
 
 interface VerifiedPaymentData {
     txid: string;
@@ -154,6 +155,7 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
                     </button>
                 </div>
             )}
+            {/* Remover todo o código relacionado ao WebSocket original
             {/* Restante do componente mantido com ajustes similares */}
             
             <div className="mt-6">
