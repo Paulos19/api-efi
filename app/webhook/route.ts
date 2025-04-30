@@ -1,58 +1,87 @@
-// app/api/webhook/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import WebSocket, { WebSocketServer } from 'ws'; // Importar WebSocket para enviar atualizações
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+// Remova as importações de 'ws' se não forem mais usadas aqui
+// import WebSocket, { WebSocketServer } from 'ws';
+import { run as runSqliteQuery } from '@/lib/sqlite';
 
 const prisma = new PrismaClient();
 
-// Servidor WebSocket (dentro do backend Node.js)
-const wss = new WebSocketServer({ noServer: true });
-
-wss.on('connection', (ws) => {
-  console.log('Cliente WebSocket conectado');
-  
-  // Quando o pagamento for confirmado, enviaremos uma mensagem ao cliente
-  ws.on('message', (message) => {
-    console.log('Mensagem recebida:', message);
-  });
-});
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    console.log("📥 [Webhook Pix Recebido]:", JSON.stringify(body, null, 2));
+    const notification = await req.json();
+    console.log('Webhook recebido:', JSON.stringify(notification, null, 2));
 
-    const pixData = body.pix[0];
-    const { endToEndId, txid, valor, chave, horario } = pixData;
+    if (!notification || !notification.pix || !Array.isArray(notification.pix)) {
+      console.warn('Formato de webhook inválido recebido.');
+      return NextResponse.json({ message: 'Webhook recebido, formato inválido.' }, { status: 200 });
+    }
 
-    // Atualiza o status para "PAYMENT_RECEIVED" após receber o pagamento
-    const updatedPayment = await prisma.pixWebhook.upsert({
-      where: { txid },
-      update: {
-        status: "PAYMENT_RECEIVED",
-        valor: parseFloat(valor),
-        horario: new Date(horario),
-      },
-      create: {
-        endToEndId,
-        txid,
-        valor: parseFloat(valor),
-        chave,
-        horario: new Date(horario),
-        status: "PAYMENT_RECEIVED",
-      },
-    });
+    for (const pix of notification.pix) {
+      const txid = pix.txid;
+      const valorPago = parseFloat(pix.valor);
+      const status = 'CONCLUIDO';
 
-    // Enviar uma atualização para os clientes conectados via WebSocket
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ txid, status: "PAYMENT_RECEIVED" }));
+      let characterName: string | undefined;
+      if (pix.infoAdicionais && Array.isArray(pix.infoAdicionais)) {
+        const info = pix.infoAdicionais.find((item: { nome: string; valor: string }) => item.nome === 'characterName');
+        characterName = info?.valor;
       }
-    });
 
-    return NextResponse.json({ message: "Webhook processado e pagamento recebido", updatedPayment });
-  } catch (error) {
-    console.error("❌ [Erro Webhook]:", error);
-    return NextResponse.json({ error: "Erro ao processar o webhook" }, { status: 500 });
+      if (!txid) {
+        console.warn('Webhook sem txid:', pix);
+        continue;
+      }
+
+      if (!characterName) {
+        console.warn(`Webhook para txid ${txid} sem characterName em infoAdicionais.`);
+        continue;
+      }
+
+      console.log(`Processando pagamento concluído para txid: ${txid}, characterName: ${characterName}, Valor: ${valorPago}`);
+
+      try {
+        const updatedPayment = await prisma.pixWebhook.updateMany({
+          where: { txid: txid },
+          data: {
+            status: 'COMPLETED',
+            payload: JSON.stringify(pix),
+          },
+        });
+
+        if (updatedPayment.count > 0) {
+          console.log(`Status atualizado para COMPLETED no PostgreSQL para txid: ${txid}`);
+          const coinsToAdd = 100;
+
+          try {
+            const sqliteResult = await runSqliteQuery(
+              'UPDATE characters SET coins = coins + ? WHERE name = ?',
+              [coinsToAdd, characterName]
+            );
+
+            if (sqliteResult.changes > 0) {
+              console.log(`${coinsToAdd} coins adicionadas ao characterName ${characterName} no SQLite. Linhas afetadas: ${sqliteResult.changes}`);
+
+            } else {
+              console.warn(`Nenhuma linha atualizada no SQLite para characterName ${characterName}. O personagem existe?`);
+            }
+          } catch (sqliteError: any) {
+            console.error(`Erro ao atualizar coins no SQLite para characterName ${characterName}:`, sqliteError.message);
+          }
+
+        } else {
+          console.log(`Nenhum registro encontrado ou já atualizado no PostgreSQL para txid: ${txid}`);
+        }
+
+      } catch (dbError: any) {
+        console.error(`Erro ao processar o txid ${txid} no banco de dados:`, dbError.message);
+      }
+    }
+
+    return NextResponse.json({ message: 'Webhook processado' }, { status: 200 });
+
+  } catch (error: any) {
+    console.error('Erro fatal ao processar corpo do webhook:', error.message);
+    return NextResponse.json({ message: 'Erro interno ao processar webhook' }, { status: 500 });
   }
 }

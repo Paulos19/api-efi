@@ -9,12 +9,15 @@ datasource db {
 
 model PixWebhook {
   id         String   @id @default(uuid())
-  endToEndId String   @unique
+  // endToEndId String?  @unique // Made optional as it might not always be present initially
   txid       String   @unique
   valor      Float
-  chave      String
+  // chave      String? // Made optional as it might not always be present initially
   status     String   @default("PENDING")
-  horario    DateTime
+  // horario    DateTime? // Made optional as it might not always be present initially
+  payload    String?  // Added to store the webhook payload (as JSON string)
+  characterId Int?    // Added to link to the character
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt // Good practice to track updates
 }
 
