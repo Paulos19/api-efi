@@ -99,7 +99,10 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
         try {
             const response = await axios.get(`/api/pix/status/${generatedTxid}`);
             if (response.data.status === 'COMPLETED') {
-                setPaymentStatus('completed');
+                setPaymentStatus('COMPLETED');
+                setError(null);
+            } else {
+                setError('Aguardando Pagamento. Caso tenha pago, espere 10 segundos e clique novamente');
             }
         } catch (error) {
             console.error('Erro ao verificar status:', error);
@@ -141,12 +144,12 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
 
             {paymentStatus === 'COMPLETED' && (
                 <div className="mt-4 p-4 bg-green-800 rounded-lg">
-                    <p className="text-green-400">✅ Pagamento confirmado para {verifiedPaymentData?.characterName}!</p>
+                    <p className="text-green-400">✅ Pagamento confirmado para {localCharacterName}!</p>
                     <button
                         onClick={handleConfirmCoins}
                         className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                     >
-                        Confirmar 100 Coins
+                        Adicionar 100 Coins
                     </button>
                 </div>
             )}
