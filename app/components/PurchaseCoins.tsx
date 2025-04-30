@@ -49,7 +49,8 @@ const PurchaseCoins: React.FC = () => {
         console.log('Mensagem recebida do WebSocket:', message);
 
         // Verifica se o pagamento foi confirmado pelo servidor
-        if (message.type === 'payment_verified' && message.txid && message.characterName) {
+        // Alterado de 'payment_verified' para 'payment_confirmed' para alinhar com o webhook
+        if (message.type === 'payment_confirmed' && message.txid && message.characterName) {
           setPaymentStatus('verified');
           setVerifiedPaymentData({ txid: message.txid, characterName: message.characterName });
           setQrCode(null); // Limpa o QR Code após confirmação
