@@ -33,24 +33,24 @@ export async function POST(req: NextRequest) {
     const txid = cobResponse.data.txid; // Obter o txid da resposta
 
     // Salvar o txid e characterName no banco de dados (PostgreSQL via Prisma)
-    // Isso ajuda a associar o pagamento ao personagem antes mesmo do webhook
     try {
       await prisma.pixWebhook.create({
         data: {
           txid: txid,
-          endToEndId: '', // Será preenchido pelo webhook
+          // endToEndId: '', // Será preenchido pelo webhook, não precisa definir aqui
           valor: parseFloat(valor),
-          chave: process.env.GN_PIX_KEY || 'chave_padrao', // Use a chave ou um valor padrão
+          chave: process.env.GN_PIX_KEY || undefined, // Usar a chave ou undefined
           horario: new Date(), // Horário da criação da cobrança
           status: 'PENDING', // Status inicial
-          // Adicione um campo para characterName se o seu modelo Prisma tiver
-          // characterName: characterName, // Descomente se tiver o campo
+          characterName: characterName, // Salvar o characterName aqui
         }
       });
       console.log(`[API Pix] Cobrança criada e registrada no DB para txid: ${txid}, character: ${characterName}`);
     } catch (dbError: any) {
       // Logar o erro mas continuar, pois o QR code ainda pode ser gerado
-      console.error(`[API Pix] Erro ao salvar cobrança inicial no DB para txid ${txid}:`, dbError.message);
+      // IMPORTANTE: Considerar se deve retornar erro aqui caso a persistência inicial seja crítica
+      console.error(`[API Pix] Erro CRÍTICO ao salvar cobrança inicial no DB para txid ${txid}:`, dbError.message);
+      // return NextResponse.json({ error: "Erro interno ao registrar cobrança" }, { status: 500 }); // Descomentar se preferir falhar
     }
 
     const qrcodeResponse = await reqGN.get(`/v2/loc/${locId}/qrcode`);
@@ -69,5 +69,7 @@ export async function POST(req: NextRequest) {
     const errorMessage = error.response?.data?.mensagem || error.response?.data?.title || "Erro ao gerar o Pix";
     const errorStatus = error.response?.status || 500;
     return NextResponse.json({ error: errorMessage }, { status: errorStatus });
+  } finally {
+    await prisma.$disconnect(); // Boa prática desconectar o Prisma
   }
 }
