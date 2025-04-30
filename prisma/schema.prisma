@@ -9,20 +9,16 @@ datasource db {
 
 // Modelo para armazenar informações de webhooks PIX recebidos
 model PixWebhook {
-  id         String   @id @default(uuid())
-  endToEndId String?  @unique // ID ponta-a-ponta do PIX (opcional, pode vir depois)
-  txid       String   @unique // ID da transação gerado pela Gerencianet
-  valor      Float    // Valor do PIX
-  chave      String?  // Chave PIX utilizada (opcional)
-  status     String   @default("PENDING") // Status do pagamento (ex: PENDING, COMPLETED, ERROR)
-  horario    DateTime? // Horário da transação PIX (opcional, vem do webhook)
-  payload    String?  // Payload JSON completo recebido do webhook (armazenado como string)
-  characterId Int?    // ID do personagem associado (se aplicável, requer relação)
-  createdAt  DateTime @default(now()) // Data e hora de criação do registro
-  updatedAt  DateTime @updatedAt // Data e hora da última atualização do registro
-
-  // Adicione aqui a relação com o modelo Character se necessário
-  // character Character? @relation(fields: [characterId], references: [id])
+  id            String    @id @default(uuid())
+  endToEndId    String?   @unique // Tornar opcional se puder ser nulo inicialmente
+  txid          String    @unique
+  valor         Float
+  chave         String?   // Tornar opcional se puder ser nulo
+  status        String    @default("PENDING")
+  horario       DateTime? // Tornar opcional se puder ser nulo
+  createdAt     DateTime  @default(now())
+  characterName String?   // Adicionar este campo (opcional ou String)
+  payload       Json?     // Adicionar campo para guardar o payload completo (opcional)
 }
 
 // Adicione outros modelos aqui, por exemplo, para Characters:
