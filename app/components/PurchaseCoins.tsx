@@ -93,9 +93,23 @@ const PurchaseCoins: React.FC = () => {
         valor: '0.01', // Valor fixo ou dinâmico
         characterName: characterName,
       });
-      setQrCode(response.data.qrCode);
+
+      // Adicione este log para verificar a resposta da API
+      console.log('API Response Data:', response.data);
+
+      // Verifica se qrCode existe na resposta antes de definir
+      if (response.data && response.data.qrCode) {
+        setQrCode(response.data.qrCode);
+      } else {
+        console.error('Campo qrCode não encontrado na resposta da API:', response.data);
+        setError('A resposta da API não incluiu um QR Code válido.');
+        setPaymentStatus('idle'); // Volta ao estado inicial
+      }
+
     } catch (err: any) {
       console.error("Erro ao gerar PIX:", err);
+      // Adicione log do erro específico da API se disponível
+      console.error("API Error Response:", err.response?.data);
       setError(err.response?.data?.error || 'Falha ao gerar o QR Code PIX. Tente novamente.');
       setPaymentStatus('idle'); // Volta ao estado inicial em caso de erro
     } finally {
