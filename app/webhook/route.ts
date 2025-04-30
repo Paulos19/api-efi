@@ -9,10 +9,11 @@ const ably = new Ably.Rest(process.env.ABLY_API_KEY!);
 async function notifyAblyChannel(txid: string, characterName: string) {
   try {
     const channel = ably.channels.get(`pix-payments-${txid}`);
-    await channel.publish('payment_confirmed', { 
+    await channel.publish('payment_confirmed', {
       txid,
       characterName,
-      status: 'COMPLETED'
+      status: 'COMPLETED',
+      timestamp: new Date().toISOString()
     });
     console.log(`[Ably] Notificação enviada para o canal pix-payments-${txid}`);
   } catch (error: any) {

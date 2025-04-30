@@ -28,12 +28,13 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
         if (message.name === 'payment_confirmed' && message.data.txid === generatedTxid) {
             setPaymentStatus('verified');
             setVerifiedPaymentData({ 
-                txid: message.data.txid, 
-                characterName: localCharacterName 
+                txid: message.data.txid,
+                characterName: localCharacterName
             });
             setQrCode(null);
             setError(null);
         }
+        console.log(channel)
     });
     const generatedTxidRef = useRef<string | null>(null);
 
