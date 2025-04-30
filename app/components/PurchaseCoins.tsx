@@ -145,6 +145,35 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
                 </div>
             )}
             {/* Restante do componente mantido com ajustes similares */}
+            
+            <div className="mt-6">
+              <button
+                onClick={handleGeneratePix}
+                disabled={isLoading}
+                className={`w-full px-6 py-3 rounded font-medium ${
+                  isLoading 
+                    ? 'bg-blue-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } transition-colors`}
+              >
+                {isLoading ? 'Gerando QR Code...' : 'Gerar QR Code PIX'}
+              </button>
+            </div>
+
+            {qrCode && (
+              <div className="mt-6 p-4 bg-gray-700 rounded">
+                <Image
+                  src={qrCode}
+                  alt="QR Code PIX"
+                  width={300}
+                  height={300}
+                  className="mx-auto"
+                />
+                <p className="mt-4 text-sm text-gray-400 text-center">
+                  Valor: R$ 0,01 (Valor teste)
+                </p>
+              </div>
+            )}
         </div>
     );
 };
