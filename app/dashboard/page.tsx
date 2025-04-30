@@ -54,8 +54,11 @@ export default function DashboardPage() {
                 try {
                     const data = JSON.parse(event.data as string);
                     console.log('Mensagem WebSocket recebida:', data);
-                    if (data.type === 'payment_success') {
-                        setNotification({ type: 'success', message: data.message });
+                    // Altere 'payment_success' para 'payment_confirmed'
+                    if (data.type === 'payment_confirmed') {
+                        // Use a mensagem que vem do servidor WebSocket ou defina uma padrão
+                        const message = data.message || `Pagamento para ${data.characterName} confirmado!`;
+                        setNotification({ type: 'success', message: message });
                         // Opcional: Atualizar a lista de personagens para refletir as novas coins
                         if (user) {
                             fetchCharacters(user.name);
