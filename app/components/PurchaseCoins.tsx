@@ -24,7 +24,17 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
     const [verifiedPaymentData, setVerifiedPaymentData] = useState<VerifiedPaymentData | null>(null);
     const [generatedTxid, setGeneratedTxid] = useState<string | null>(null);
 
-    const ws = useRef<WebSocket | null>(null);
+    const [channel] = useChannel(`pix-payments-${generatedTxid}`, (message) => {
+        if (message.name === 'payment_confirmed' && message.data.txid === generatedTxid) {
+            setPaymentStatus('verified');
+            setVerifiedPaymentData({ 
+                txid: message.data.txid, 
+                characterName: localCharacterName 
+            });
+            setQrCode(null);
+            setError(null);
+        }
+    });
     const generatedTxidRef = useRef<string | null>(null);
 
     // Atualiza o nome local quando a prop muda
@@ -35,57 +45,6 @@ const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName: propCharac
     useEffect(() => {
         generatedTxidRef.current = generatedTxid;
     }, [generatedTxid]);
-
-    useEffect(() => {
-        const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
-    
-        if (!ws.current || ws.current.readyState === WebSocket.CLOSED) {
-            ws.current = new WebSocket(wsUrl);
-            const currentWs = ws.current;
-
-            currentWs.onopen = () => {
-              setError(null);
-              // Reconecta com o último txid gerado
-              if (generatedTxidRef.current) {
-                currentWs.send(JSON.stringify({
-                  type: 'restore_session',
-                  txid: generatedTxidRef.current
-                }));
-              }
-            };
-
-            currentWs.onclose = (event) => {
-              if (!event.wasClean && paymentStatus !== 'verified') {
-                 setError('Conexão com o servidor perdida');
-              }
-            };
-
-            currentWs.onmessage = (event) => {
-              try {
-                const message = JSON.parse(event.data);
-                
-                if (message.type === 'payment_confirmed' && message.txid === generatedTxidRef.current) {
-                  setPaymentStatus('verified');
-                  setVerifiedPaymentData({ 
-                    txid: message.txid, 
-                    characterName: localCharacterName 
-                  });
-                  setQrCode(null);
-                  setError(null);
-                  ws.current?.close(1000, 'Payment completed');
-                }
-              } catch (e) {
-                console.error('Erro ao processar mensagem:', e);
-              }
-            };
-        }
-
-        return () => {
-          if (ws.current?.readyState === WebSocket.OPEN && paymentStatus !== 'verified') {
-            ws.current?.close();
-          }
-        };
-    }, [localCharacterName]); // Removemos a dependência do generatedTxid
 
     const handleGeneratePix = async () => {
         if (!localCharacterName) {
