@@ -1,154 +1,198 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 
-interface PurchaseCoinsProps {
-    characterName: string;
-    onError: (message: string | null) => void;
-    onPaymentSuccess: (txid: string) => void;
+// Interface para os dados do pagamento verificado
+interface VerifiedPaymentData {
+  txid: string;
+  characterName: string;
 }
 
-enum PaymentStatus {
-    PENDING = 'PENDING',
-    COMPLETED = 'COMPLETED',
-    ERROR = 'ERROR',
-}
+const PurchaseCoins: React.FC = () => {
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [characterName, setCharacterName] = useState(''); // Estado para o nome do personagem
+  const [paymentStatus, setPaymentStatus] = useState<string>('idle'); // idle, waiting, verified, adding, success, failed
+  const [verifiedPaymentData, setVerifiedPaymentData] = useState<VerifiedPaymentData | null>(null); // Armazena dados para adicionar coins
 
-const PurchaseCoins: React.FC<PurchaseCoinsProps> = ({ characterName, onError, onPaymentSuccess }) => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [qrCode, setQrCode] = useState<string | null>(null);
-    const [txid, setTxid] = useState<string | null>(null);
-    const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.PENDING);
-    const ws = useRef<WebSocket | null>(null);
+  const ws = useRef<WebSocket | null>(null); // Referência para o WebSocket
 
-    const purchaseValue = "0.01";
+  // Efeito para conectar/desconectar WebSocket
+  useEffect(() => {
+    // Conecta ao servidor WebSocket
+    // Certifique-se que a URL está correta (ws:// ou wss:// para produção com HTTPS)
+    const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
+    ws.current = new WebSocket(wsUrl);
 
-    useEffect(() => {
-        if (!txid || paymentStatus === PaymentStatus.COMPLETED) {
-            ws.current?.close();
-            ws.current = null;
-            return;
-        }
-
-        const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
-        ws.current = new WebSocket(wsUrl);
-
-        ws.current.onopen = () => {
-            console.log('WebSocket Conectado');
-        };
-
-        ws.current.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                console.log('Mensagem WebSocket recebida:', message);
-
-                if (
-                    message.type === 'payment_confirmed' &&
-                    message.txid === txid &&
-                    message.status === PaymentStatus.COMPLETED
-                ) {
-                    console.log(`Pagamento confirmado para TXID: ${txid}`);
-                    setPaymentStatus(PaymentStatus.COMPLETED);
-                    onPaymentSuccess(txid);
-                    ws.current?.close();
-                }
-            } catch (error) {
-                console.error('Erro ao processar mensagem WebSocket:', error);
-            }
-        };
-
-        ws.current.onerror = (error) => {
-            console.error('Erro no WebSocket:', error);
-        };
-
-        ws.current.onclose = () => {
-            console.log('WebSocket Desconectado');
-            if (!Object.is(paymentStatus, PaymentStatus.COMPLETED)) {
-                ws.current = null;
-              }
-        };
-
-        return () => {
-            console.log('Limpando WebSocket...');
-            ws.current?.close();
-            ws.current = null;
-        };
-    }, [txid, paymentStatus, onPaymentSuccess]);
-
-    const handlePurchase = async () => {
-        setIsLoading(true);
-        onError(null);
-        setQrCode(null);
-        setTxid(null);
-        setPaymentStatus(PaymentStatus.PENDING);
-
-        try {
-            const response = await axios.post('/api/pix', {
-                valor: purchaseValue,
-                characterName,
-            });
-            setQrCode(response.data.qrcode);
-            setTxid(response.data.txid);
-        } catch (err: any) {
-            console.error("Erro ao gerar QR Code:", err);
-            onError(err.response?.data?.message || 'Falha ao iniciar o pagamento PIX.');
-            setPaymentStatus(PaymentStatus.ERROR);
-        } finally {
-            setIsLoading(false);
-        }
+    ws.current.onopen = () => {
+      console.log('WebSocket Conectado');
+      setPaymentStatus('idle'); // Reset status on connect
     };
 
-    return (
-        <div className="p-6 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-center">
-            <h3 className="text-lg font-semibold mb-4">Comprar 100 Coins para {characterName}</h3>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                Clique no botão abaixo para gerar um QR Code PIX no valor de R$ {purchaseValue}.
-            </p>
+    ws.current.onclose = () => {
+      console.log('WebSocket Desconectado');
+      // Opcional: tentar reconectar ou mostrar mensagem
+    };
 
-            {(!qrCode || paymentStatus !== PaymentStatus.COMPLETED) && (
-                <button
-                    onClick={handlePurchase}
-                    disabled={isLoading}
-                    className="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 mb-4"
-                >
-                    {isLoading ? 'Gerando PIX...' : `Comprar Coins (R$ ${purchaseValue})`}
-                </button>
-            )}
+    ws.current.onerror = (event) => {
+      console.error('WebSocket Erro:', event);
+      setError('Erro na conexão com o servidor de notificações.');
+    };
 
-            {qrCode && paymentStatus === PaymentStatus.PENDING && (
-                <div className="mt-4 flex flex-col items-center">
-                    <h4 className="font-medium mb-2">Pague com PIX:</h4>
-                    <Image
-                        src={qrCode}
-                        alt="QR Code PIX"
-                        width={200}
-                        height={200}
-                        className="border rounded"
-                    />
-                    <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">TXID: {txid}</p>
-                    <p className="mt-2 text-sm font-medium">Aguardando confirmação do pagamento...</p>
-                    <div className="animate-pulse mt-2 text-gray-500 dark:text-gray-400">Esperando...</div>
-                </div>
-            )}
+    // Listener para mensagens recebidas do servidor WebSocket
+    ws.current.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('Mensagem recebida do WebSocket:', message);
 
-            {paymentStatus === PaymentStatus.COMPLETED && (
-                <div className="mt-4 p-4 bg-green-100 dark:bg-green-800 border border-green-300 dark:border-green-600 rounded text-green-700 dark:text-green-200">
-                    <h4 className="font-semibold text-lg">Pagamento Confirmado!</h4>
-                    <p>As coins foram adicionadas para {characterName}.</p>
-                    <p className="text-xs mt-1">TXID: {txid}</p>
-                </div>
-            )}
+        // Verifica se o pagamento foi confirmado pelo servidor
+        if (message.type === 'payment_verified' && message.txid && message.characterName) {
+          setPaymentStatus('verified');
+          setVerifiedPaymentData({ txid: message.txid, characterName: message.characterName });
+          setQrCode(null); // Limpa o QR Code após confirmação
+          setError(null);
+        } else if (message.type === 'coins_added_success') {
+          setPaymentStatus('success');
+          setVerifiedPaymentData(null); // Limpa dados após sucesso
+          // Opcional: Atualizar saldo de coins na UI se necessário
+        } else if (message.type === 'add_coins_failed') {
+          setPaymentStatus('failed');
+          setError(`Falha ao adicionar coins: ${message.reason || 'Erro desconhecido'}`);
+        } else if (message.type === 'error') {
+           setError(`Erro do servidor: ${message.message || 'Erro desconhecido'}`);
+           setPaymentStatus('failed'); // Considerar como falha
+        }
+      } catch (e) {
+        console.error('Erro ao processar mensagem WebSocket:', e);
+      }
+    };
 
-            {paymentStatus === PaymentStatus.ERROR && !isLoading && (
-                <div className="mt-4 p-4 bg-red-100 dark:bg-red-800 border border-red-300 dark:border-red-600 rounded text-red-700 dark:text-red-200">
-                    <h4 className="font-semibold text-lg">Erro no Pagamento</h4>
-                    <p>Houve um problema ao processar seu pagamento. Tente novamente.</p>
-                </div>
-            )}
+    // Função de limpeza para fechar a conexão ao desmontar o componente
+    return () => {
+      ws.current?.close();
+    };
+  }, []); // Executa apenas uma vez na montagem
+
+  const handleGeneratePix = async () => {
+    if (!characterName) {
+      setError('Por favor, digite o nome do personagem.');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    setQrCode(null);
+    setPaymentStatus('waiting'); // Define o status como esperando pagamento
+    setVerifiedPaymentData(null); // Limpa dados anteriores
+
+    try {
+      // Chama a API para gerar o PIX, passando nome e valor
+      const response = await axios.post('/api/pix', {
+        valor: '0.01', // Valor fixo ou dinâmico
+        characterName: characterName,
+      });
+      setQrCode(response.data.qrCode);
+    } catch (err: any) {
+      console.error("Erro ao gerar PIX:", err);
+      setError(err.response?.data?.error || 'Falha ao gerar o QR Code PIX. Tente novamente.');
+      setPaymentStatus('idle'); // Volta ao estado inicial em caso de erro
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Função para enviar a solicitação de adicionar coins via WebSocket
+  const handleAddCoins = () => {
+    if (!verifiedPaymentData || !ws.current || ws.current.readyState !== WebSocket.OPEN) {
+      setError('Não foi possível solicitar a adição de coins. Verifique a conexão.');
+      setPaymentStatus('failed');
+      return;
+    }
+
+    setPaymentStatus('adding'); // Define o status como adicionando
+    setError(null);
+
+    const message = JSON.stringify({
+      type: 'add_coins',
+      txid: verifiedPaymentData.txid,
+      characterName: verifiedPaymentData.characterName,
+    });
+
+    console.log('Enviando mensagem add_coins:', message);
+    ws.current.send(message);
+  };
+
+  return (
+    <div className="p-4 max-w-md mx-auto bg-gray-800 text-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Comprar 100 Coins (R$ 0,01)</h2>
+
+      {/* Input para nome do personagem */}
+      <div className="mb-4">
+        <label htmlFor="characterName" className="block mb-1">Nome do Personagem:</label>
+        <input
+          type="text"
+          id="characterName"
+          value={characterName}
+          onChange={(e) => setCharacterName(e.target.value)}
+          className="w-full p-2 rounded bg-gray-700 border border-gray-600"
+          placeholder="Digite o nome do seu personagem"
+          disabled={isLoading || paymentStatus === 'waiting' || paymentStatus === 'verified' || paymentStatus === 'adding'}
+        />
+      </div>
+
+      {/* Botão Gerar PIX */}
+      {!qrCode && paymentStatus !== 'verified' && paymentStatus !== 'adding' && paymentStatus !== 'success' && (
+        <button
+          onClick={handleGeneratePix}
+          disabled={isLoading || !characterName}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+        >
+          {isLoading ? 'Gerando PIX...' : 'Gerar QR Code PIX'}
+        </button>
+      )}
+
+      {/* Exibição do QR Code e Status */}
+      {isLoading && <p className="mt-4 text-center">Carregando...</p>}
+      {error && <p className="mt-4 text-red-500 text-center">{error}</p>}
+      {qrCode && paymentStatus === 'waiting' && (
+        <div className="mt-4 text-center">
+          <p className="mb-2">Escaneie o QR Code abaixo para pagar:</p>
+          <Image src={qrCode} alt="QR Code PIX" width={200} height={200} className="mx-auto" />
+          <p className="mt-2 text-yellow-400">Aguardando confirmação do pagamento...</p>
         </div>
-    );
+      )}
+
+      {/* Botão Adicionar Coins (habilitado após verificação) */}
+      {paymentStatus === 'verified' && verifiedPaymentData && (
+        <div className="mt-4 text-center">
+          <p className="mb-2 text-green-500 font-bold">Pagamento confirmado para {verifiedPaymentData.characterName}!</p>
+          <button
+            onClick={handleAddCoins}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Adicionar 100 Coins
+          </button>
+        </div>
+      )}
+
+      {/* Mensagens de Status */}
+       {paymentStatus === 'adding' && (
+         <p className="mt-4 text-center text-blue-400">Adicionando coins...</p>
+       )}
+       {paymentStatus === 'success' && (
+         <p className="mt-4 text-center text-green-500 font-bold">Coins adicionadas com sucesso!</p>
+         // Opcional: Botão para nova compra
+         // <button onClick={() => { setPaymentStatus('idle'); setCharacterName(''); }} className="mt-2 text-sm text-blue-400 underline">Nova Compra</button>
+       )}
+       {paymentStatus === 'failed' && error && (
+         <p className="mt-4 text-center text-red-500">{error}</p>
+         // Opcional: Botão para tentar novamente ou nova compra
+       )}
+
+    </div>
+  );
 };
 
 export default PurchaseCoins;
