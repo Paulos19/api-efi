@@ -7,6 +7,7 @@ import RegisterForm from '../components/RegisterForm';
 import CharacterList from '../components/CharacterList';
 import PurchaseCoins from '../components/PurchaseCoins';
 import NotificationModal from '../components/NotificationModal';
+import { useChannel } from "@ably-labs/react-hooks";
 
 // Interfaces para tipagem
 interface User {
@@ -30,75 +31,20 @@ export default function DashboardPage() {
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ type: string; message: string } | null>(null);
 
-    // --- WebSocket Connection ---
-    useEffect(() => {
-        // A URL do WebSocket deve corresponder à porta definida no backend (webhook/route.ts)
-        const wsUrl = 'ws://localhost:8080';
-        let ws: WebSocket | null = null;
-        let reconnectInterval: NodeJS.Timeout | null = null;
+    // Substituir o useEffect do WebSocket por:
+    const [channel] = useChannel(`user-${user?.id}-notifications`, (message) => {
+        if (message.name === 'payment_confirmed') {
+            const data = message.data;
+            const notificationMsg = `Pagamento para ${data.characterName} confirmado!`;
+            setNotification({ type: 'success', message: notificationMsg });
+            
+            if (user) {
+                fetchCharacters(user.name);
+            }
+        }
+    });
 
-        const connectWebSocket = () => {
-            console.log('Tentando conectar ao WebSocket...');
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = () => {
-                console.log('WebSocket conectado');
-                setError(null); // Limpa erros de conexão anteriores
-                if (reconnectInterval) {
-                    clearInterval(reconnectInterval);
-                    reconnectInterval = null;
-                }
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data as string);
-                    console.log('Mensagem WebSocket recebida:', data);
-                    // Altere 'payment_success' para 'payment_confirmed'
-                    if (data.type === 'payment_confirmed') {
-                        // Use a mensagem que vem do servidor WebSocket ou defina uma padrão
-                        const message = data.message || `Pagamento para ${data.characterName} confirmado!`;
-                        setNotification({ type: 'success', message: message });
-                        // Opcional: Atualizar a lista de personagens para refletir as novas coins
-                        if (user) {
-                            fetchCharacters(user.name);
-                        }
-                    }
-                    // Adicione outros tipos de mensagem se necessário
-                } catch (e) {
-                    console.error('Erro ao processar mensagem WebSocket:', e);
-                }
-            };
-
-            ws.onerror = (event) => {
-                console.error('Erro no WebSocket:', event);
-                setError('Não foi possível conectar ao servidor de notificações.');
-                // Tenta reconectar após um tempo
-                if (!reconnectInterval) {
-                    reconnectInterval = setInterval(connectWebSocket, 5000); // Tenta a cada 5 segundos
-                }
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket desconectado');
-                // Tenta reconectar se não for uma desconexão intencional
-                if (!reconnectInterval) {
-                   reconnectInterval = setInterval(connectWebSocket, 5000);
-                }
-            };
-        };
-
-        connectWebSocket();
-
-        // Limpeza ao desmontar o componente
-        return () => {
-            if (reconnectInterval) clearInterval(reconnectInterval);
-            ws?.close();
-            console.log('Conexão WebSocket fechada.');
-        };
-    }, [user]); // Reconecta se o usuário mudar (ou ao logar)
-
-    // --- Funções de Autenticação e Dados ---
+    // Remover todo o bloco do useEffect do WebSocket original
     const fetchCharacters = useCallback(async (accountName: string) => {
         setIsLoading(true);
         setError(null);
@@ -123,12 +69,13 @@ export default function DashboardPage() {
         fetchCharacters(loggedInUser.name); // Busca personagens após login
     };
 
+    // Atualizar o handleLogout para limpar o canal
     const handleLogout = () => {
         setUser(null);
         setCharacters([]);
         setSelectedCharacter(null);
         setError(null);
-        // Opcional: Desconectar WebSocket ou limpar estado relacionado
+        channel?.unsubscribe();
     };
 
     const handleRegisterSuccess = () => {
