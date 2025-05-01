@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { run as runSqliteQuery } from '@/lib/sqlite';
+// Remova a importação do sqlite
+// import { run as runSqliteQuery } from '@/lib/sqlite';
 
 const prisma = new PrismaClient();
 
@@ -59,25 +60,40 @@ export async function POST(req: NextRequest) {
           payload: pix,
           endToEndId,
           horario: horarioPix,
-          characterName
+          characterName // Certifique-se que characterName está sendo populado corretamente
         }
       });
 
-      // Atualizar coins no SQLite
+      // Substituir a lógica do SQLite pela lógica do Prisma
       try {
-        const sqliteResult = await runSqliteQuery(
-            `INSERT OR IGNORE INTO characters (name, coins) VALUES (?, 0);
-             UPDATE characters SET coins = coins + ? WHERE name = ?`,
-            [characterName, 100, characterName]
-        );
+        // Encontrar o personagem pelo nome
+        const character = await prisma.character.findUnique({
+          where: { name: characterName },
+          include: { accountRel: true } // Corrected: Use the relation field name 'accountRel'
+        });
 
-        if (sqliteResult.changes > 0) {
-          console.log(`[Webhook] ${characterName} recebeu 100 coins`);
-        } else {
-          console.warn(`[Webhook] Falha na atualização de coins para ${characterName}`);
+        if (character && character.accountRel) { // Corrected: Check 'accountRel'
+          // Atualizar os coins na conta associada ao personagem
+          // IMPORTANTE: Assumindo que o modelo 'Account' tem um campo 'coins' do tipo numérico.
+          // Verifique seu schema.prisma e adicione `coins Float @default(0)` ou similar se necessário.
+          await prisma.account.update({
+            where: { id: character.accountRel.id }, // Corrected: Access account ID via 'accountRel'
+            data: {
+              // Substitua 'coins' pelo nome correto do campo se for diferente
+              coins: {
+                increment: 100 // Adiciona 100 coins
+              }
+            }
+          });
+          console.log(`[Webhook] ${characterName} (Conta: ${character.accountRel.name}) recebeu 100 coins via Prisma.`); // Corrected: Access account name via 'accountRel'
+        } else if (character) {
+           console.warn(`[Webhook] Personagem ${characterName} encontrado, mas sem conta associada (account field: ${character.account}). Coins não adicionados.`); // Adjusted log message
         }
-      } catch (sqliteError: any) {
-        console.error(`[Webhook] Erro no SQLite: ${sqliteError.message}`);
+         else {
+          console.warn(`[Webhook] Personagem ${characterName} não encontrado no banco de dados Prisma. Coins não adicionados.`);
+        }
+      } catch (prismaError: any) {
+        console.error(`[Webhook] Erro ao atualizar coins via Prisma para ${characterName}: ${prismaError.message}`);
       }
     }
 

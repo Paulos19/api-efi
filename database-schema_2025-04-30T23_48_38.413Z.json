@@ -1,0 +1,597 @@
+[
+  {
+    "table": "_prisma_migrations",
+    "columns": [
+      {
+        "name": "id",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "checksum",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "finished_at",
+        "type": "DATETIME",
+        "notnull": false
+      },
+      {
+        "name": "migration_name",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "logs",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "rolled_back_at",
+        "type": "DATETIME",
+        "notnull": false
+      },
+      {
+        "name": "started_at",
+        "type": "DATETIME",
+        "notnull": true
+      },
+      {
+        "name": "applied_steps_count",
+        "type": "INTEGER UNSIGNED",
+        "notnull": true
+      }
+    ]
+  },
+  {
+    "table": "Account",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "password",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "created",
+        "type": "DATETIME",
+        "notnull": true
+      },
+      {
+        "name": "lastlogin",
+        "type": "DATETIME",
+        "notnull": true
+      },
+      {
+        "name": "banned",
+        "type": "BOOLEAN",
+        "notnull": true
+      }
+    ]
+  },
+  {
+    "table": "sqlite_sequence",
+    "columns": [
+      {
+        "name": "name",
+        "type": "",
+        "notnull": false
+      },
+      {
+        "name": "seq",
+        "type": "",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "auctionHouse",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "auctionHouseId",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "category",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "itemName",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "level",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "stackSize",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "summonedHealth",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "summonedLevel",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "summonedExperience",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "currentBid",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "buyout",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "insertFee",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "ends",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "seller",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "bidder",
+        "type": "TEXT",
+        "notnull": true
+      }
+    ]
+  },
+  {
+    "table": "auctionHouse_Bids",
+    "columns": [
+      {
+        "name": "auctionHouseId",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "bids_id",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "bids_bidder",
+        "type": "TEXT",
+        "notnull": true
+      }
+    ]
+  },
+  {
+    "table": "auctionHouse_EndedAuctions",
+    "columns": [
+      {
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "auctionHouseId",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "claimableBy",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "itemName",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "stackSize",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "summonedHealth",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "summonedLevel",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "summonedExperience",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "finalValue",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "insertFee",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "seller",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "bidder",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "outbid",
+        "type": "INTEGER",
+        "notnull": true
+      }
+    ]
+  },
+  {
+    "table": "character_buffs",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "level",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "buffTimeEnd",
+        "type": "REAL",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_equipment",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "slot",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "amount",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "summonedHealth",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "summonedLevel",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "summonedExperience",
+        "type": "INTEGER",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_guild",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "guild",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "rank",
+        "type": "INTEGER",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_inventory",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "slot",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "amount",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "summonedHealth",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "summonedLevel",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "summonedExperience",
+        "type": "INTEGER",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_itemcooldowns",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "category",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "cooldownEnd",
+        "type": "REAL",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_orders",
+    "columns": [
+      {
+        "name": "orderid",
+        "type": "INTEGER",
+        "notnull": true
+      },
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "coins",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "processed",
+        "type": "INTEGER",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_quests",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "progress",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "completed",
+        "type": "INTEGER",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "character_skills",
+    "columns": [
+      {
+        "name": "character",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "level",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "castTimeEnd",
+        "type": "REAL",
+        "notnull": false
+      },
+      {
+        "name": "cooldownEnd",
+        "type": "REAL",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "characters",
+    "columns": [
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "account",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "classname",
+        "type": "TEXT",
+        "notnull": false
+      },
+      {
+        "name": "x",
+        "type": "REAL",
+        "notnull": false
+      },
+      {
+        "name": "y",
+        "type": "REAL",
+        "notnull": false
+      },
+      {
+        "name": "level",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "health",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "mana",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "strength",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "intelligence",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "experience",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "skillExperience",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "gold",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "coins",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "online",
+        "type": "INTEGER",
+        "notnull": false
+      },
+      {
+        "name": "lastsaved",
+        "type": "BIGINT",
+        "notnull": false
+      },
+      {
+        "name": "deleted",
+        "type": "INTEGER",
+        "notnull": false
+      }
+    ]
+  },
+  {
+    "table": "guild_info",
+    "columns": [
+      {
+        "name": "name",
+        "type": "TEXT",
+        "notnull": true
+      },
+      {
+        "name": "notice",
+        "type": "TEXT",
+        "notnull": false
+      }
+    ]
+  }
+]

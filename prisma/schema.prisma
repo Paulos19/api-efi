@@ -3,36 +3,234 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // Use "sqlite" se o banco de dados for SQLite
+  // Use "postgresql" se for PostgreSQL e ajuste a DATABASE_URL
+  provider = "postgres" // Ou "postgresql"
   url      = env("DATABASE_URL")
 }
 
-enum StatusPix {
-  PENDING
-  COMPLETED
-  FAILED
+// --- Modelos Gerados a partir do JSON ---
+
+model Account {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // Assumindo que 'name' é único para login
+  password  String
+  created   DateTime @default(now()) // Usando default para simplificar
+  lastlogin DateTime
+  banned    Boolean
+  coins     Int      @default(0) // Added coins field
+
+  characters Character[] // Relação com Characters
+
+  @@map("Account") // Mapeia para a tabela 'Account'
 }
 
-model PixWebhook {
-  id            String     @id @default(uuid())
-  endToEndId    String?    @unique
-  txid          String     @unique
-  valor         Float
-  chave         String?
-  status        StatusPix  @default(PENDING)
-  horario       DateTime?
-  createdAt     DateTime   @default(now())
-  characterName String?
-  payload       Json?
-  Character     Character? @relation(fields: [characterId], references: [id])
-  characterId   Int?
+model AuctionHouse {
+  id                 Int    @id @default(autoincrement())
+  auctionHouseId     Int    @unique // Assumindo que este ID é único
+  category           String
+  itemName           String
+  level              Int
+  stackSize          Int
+  summonedHealth     Int
+  summonedLevel      Int
+  summonedExperience Int
+  currentBid         Int
+  buyout             Int
+  insertFee          Int
+  ends               Int // Pode ser DateTime se representar timestamp
+  seller             String // Poderia relacionar com Character se 'seller' for nome de personagem
+  bidder             String // Poderia relacionar com Character se 'bidder' for nome de personagem
 
-  @@index([txid, status])
+  // Relação com Bids (se necessário, depende da lógica)
+  // bids AuctionHouseBid[]
+
+  @@map("auctionHouse")
+}
+
+// Tabela de Junção para Lances (Exemplo, pode precisar de ajustes)
+model AuctionHouseBid {
+  auctionHouseId Int
+  bids_id        Int // Pode ser um ID único do lance
+  bids_bidder    String // Nome do licitante
+
+  // auctionHouse AuctionHouse @relation(fields: [auctionHouseId], references: [auctionHouseId]) // Relação (se auctionHouseId for único)
+
+  @@id([auctionHouseId, bids_id]) // Chave composta
+  @@map("auctionHouse_Bids")
+}
+
+model AuctionHouseEndedAuction {
+  id                 Int    @id @default(autoincrement())
+  auctionHouseId     Int
+  claimableBy        String
+  itemName           String
+  stackSize          Int
+  summonedHealth     Int
+  summonedLevel      Int
+  summonedExperience Int
+  finalValue         Int
+  insertFee          Int
+  seller             String
+  bidder             String
+  outbid             Int // Pode ser Boolean se for 0 ou 1
+
+  @@map("auctionHouse_EndedAuctions")
+}
+
+model CharacterBuff {
+  character   String // Foreign key para Character.name
+  name        String
+  level       Int?
+  buffTimeEnd Float? // Float para REAL
+
+  // characterRel Character @relation(fields: [character], references: [name])
+
+  @@id([character, name]) // Chave composta
+  @@map("character_buffs")
+}
+
+model CharacterEquipment {
+  character          String // Foreign key para Character.name
+  slot               Int    // Removed '?' to make it required
+  name               String?
+  amount             Int?
+  summonedHealth     Int?
+  summonedLevel      Int?
+  summonedExperience Int?
+
+  // characterRel Character @relation(fields: [character], references: [name])
+
+  @@id([character, slot]) // Now valid as 'slot' is required
+  @@map("character_equipment")
+}
+
+model CharacterGuild {
+  character String  @id // Foreign key e parte da chave primária
+  guild     String? // Foreign key para GuildInfo.name
+  rank      Int?
+
+  // characterRel Character @relation(fields: [character], references: [name])
+  // guildRel     GuildInfo? @relation(fields: [guild], references: [name])
+
+  @@map("character_guild")
+}
+
+model CharacterInventory {
+  character          String // Foreign key para Character.name
+  slot               Int    // Removed '?' to make it required
+  name               String?
+  amount             Int?
+  summonedHealth     Int?
+  summonedLevel      Int?
+  summonedExperience Int?
+
+  // characterRel Character @relation(fields: [character], references: [name])
+
+  @@id([character, slot]) // Now valid as 'slot' is required
+  @@map("character_inventory")
+}
+
+model CharacterItemCooldown {
+  character   String // Foreign key para Character.name
+  category    String // Removed '?' to make it required
+  cooldownEnd Float? // Float para REAL
+
+  // characterRel Character @relation(fields: [character], references: [name])
+
+  @@id([character, category]) // Now valid as 'category' is required
+  @@map("character_itemcooldowns")
+}
+
+model CharacterOrder {
+  orderid   Int     @id @default(autoincrement())
+  character String? // Foreign key para Character.name
+  coins     Int?
+  processed Int? // Pode ser Boolean se for 0 ou 1
+
+  // characterRel Character? @relation(fields: [character], references: [name])
+
+  @@map("character_orders")
+}
+
+model CharacterQuest {
+  character String // Foreign key para Character.name
+  name      String // Removed '?' to make it required
+  progress  Int?
+  completed Int? // Pode ser Boolean se for 0 ou 1
+
+  // characterRel Character @relation(fields: [character], references: [name])
+
+  @@id([character, name]) // Now valid as 'name' is required
+  @@map("character_quests")
+}
+
+model CharacterSkill {
+  character   String // Foreign key para Character.name
+  name        String // Removed '?' to make it required
+  level       Int?
+  castTimeEnd Float? // Float para REAL
+  cooldownEnd Float? // Float para REAL
+
+  // characterRel Character @relation(fields: [character], references: [name])
+
+  @@id([character, name]) // Now valid as 'name' is required
+  @@map("character_skills")
 }
 
 model Character {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique
-  coins       Int          @default(0)
-  pixPayments PixWebhook[]
+  name            String  @id // Usando 'name' como ID único do personagem
+  account         String? // Foreign key para Account.name
+  classname       String?
+  x               Float? // Float para REAL
+  y               Float? // Float para REAL
+  level           Int?
+  health          Int?
+  mana            Int?
+  strength        Int?
+  intelligence    Int?
+  experience      Int?    @map("experience") // Mapeamento explícito se necessário
+  skillExperience Int?
+  gold            Int?
+  coins           Int?    @default(0) // Adicionando default
+  online          Int? // Pode ser Boolean se for 0 ou 1
+  lastsaved       BigInt? // BigInt para BIGINT
+  deleted         Int? // Pode ser Boolean se for 0 ou 1
+
+  accountRel Account? @relation(fields: [account], references: [name])
+
+  // Relações inversas (opcional, mas útil)
+  // buffs      CharacterBuff[]
+  // equipment  CharacterEquipment[]
+  // guild      CharacterGuild? // Relação 1-para-1 ou 1-para-muitos? Assumindo 1-para-1
+  // inventory  CharacterInventory[]
+  // cooldowns  CharacterItemCooldown[]
+  // orders     CharacterOrder[]
+  // quests     CharacterQuest[]
+  // skills     CharacterSkill[]
+
+  @@map("characters")
+}
+
+model GuildInfo {
+  name   String  @id // Usando 'name' como ID único da guilda
+  notice String?
+
+  // members CharacterGuild[] // Relação com membros
+
+  @@map("guild_info")
+}
+
+// Modelo PixWebhook existente (mantido do schema original)
+model PixWebhook {
+  id         String   @id @default(uuid())
+  endToEndId String?  @unique // Make this field optional
+  txid       String   @unique
+  valor      Float
+  chave      String
+  status     String   @default("PENDING")
+  horario    DateTime // Consider if this should also be optional or have a default
+  createdAt  DateTime @default(now())
+  characterName String? // Added based on route.ts usage, ensure it exists or add it
+  payload    Json?    // Added based on webhook route usage, ensure it exists or add it
 }

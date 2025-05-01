@@ -2,9 +2,18 @@
 
 import React, { useState } from 'react';
 import axios from 'axios';
+// Importe o tipo Account gerado pelo Prisma se disponível
+// import { Account as PrismaAccount } from '@prisma/client';
+
+// Ou defina uma interface que corresponda aos dados esperados da API de login
+interface UserData {
+    id: number; // Ajuste o tipo do ID conforme seu schema Prisma (pode ser string ou number)
+    name: string;
+    // Adicione outros campos se a API retornar mais dados úteis
+}
 
 interface LoginFormProps {
-    onLoginSuccess: (user: { id: number; name: string }) => void;
+    onLoginSuccess: (user: UserData) => void; // Use a interface atualizada
     onError: (message: string | null) => void;
 }
 
@@ -19,7 +28,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onError }) => {
         onError(null); // Limpa erros anteriores
 
         try {
-            const response = await axios.post('/api/auth/login', { name, password });
+            // A API /api/auth/login deve usar Prisma no backend
+            const response = await axios.post<{ user: UserData }>('/api/auth/login', { name, password });
             onLoginSuccess(response.data.user); // Passa os dados do usuário para o pai
         } catch (err: any) {
             console.error("Erro no login:", err);

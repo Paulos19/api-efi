@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { queryOne } from '@/lib/sqlite'; // Importa a função de busca do SQLite
+// Remova a importação do SQLite
+// import { queryOne } from '@/lib/sqlite';
+import { PrismaClient } from '@prisma/client'; // Importe o Prisma Client
 // IMPORTANTE: Instale e importe bcrypt para hashing de senhas em produção!
-// import bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt'; // Descomente e instale: npm install bcrypt @types/bcrypt
 
-// Defina uma interface para o tipo de retorno da query do Account
-interface Account {
-  id: number;
-  name: string;
-  password: string; // Em produção, este seria o hash da senha
-  // outros campos se necessário...
-}
+const prisma = new PrismaClient(); // Instancie o Prisma Client
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,28 +15,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Nome de usuário e senha são obrigatórios' }, { status: 400 });
     }
 
-    // Busca a conta no SQLite pelo nome (case-sensitive por padrão no SQLite)
-    const account = await queryOne<Account>(
-      'SELECT id, name, password FROM Account WHERE name = ?',
-      [name]
-    );
+    // Busca a conta no Prisma pelo nome
+    const account = await prisma.account.findUnique({
+      where: { name: name },
+    });
 
     if (!account) {
       console.log(`Tentativa de login falhou: Usuário ${name} não encontrado.`);
-      return NextResponse.json({ message: 'Usuário ou senha inválidos' }, { status: 401 }); // Mensagem genérica
+      // Use uma mensagem genérica para não revelar se o usuário existe ou não
+      return NextResponse.json({ message: 'Credenciais inválidas' }, { status: 401 });
     }
 
     // --- Comparação de Senha ---
-    // **MUITO IMPORTANTE:** A comparação abaixo é insegura (texto plano).
-    // Em produção, use bcrypt:
-    // const isPasswordValid = await bcrypt.compare(password, account.password);
-    // if (!isPasswordValid) { ... }
-
-    const isPasswordValid = (password === account.password); // Comparação insegura! Apenas para exemplo.
+    // **MUITO IMPORTANTE:** Use bcrypt.compare para comparar a senha fornecida com o hash armazenado.
+    const isPasswordValid = await bcrypt.compare(password, account.password);
+    // const isPasswordValid = (password === account.password); // !! REMOVA ESTA LINHA INSEGURA !!
 
     if (!isPasswordValid) {
       console.log(`Tentativa de login falhou: Senha incorreta para usuário ${name}.`);
-      return NextResponse.json({ message: 'Usuário ou senha inválidos' }, { status: 401 }); // Mensagem genérica
+      // Use uma mensagem genérica
+      return NextResponse.json({ message: 'Credenciais inválidas' }, { status: 401 });
     }
 
     // Login bem-sucedido
@@ -51,6 +45,7 @@ export async function POST(req: NextRequest) {
     const userSessionData = {
       id: account.id,
       name: account.name,
+      // Não inclua a senha ou hash da senha aqui!
     };
 
     // Retorna sucesso e dados da sessão/usuário
@@ -59,5 +54,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Erro na API de login:', error.message);
     return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect(); // Desconecta o Prisma Client
   }
 }

@@ -16,12 +16,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Valor e characterName são obrigatórios" }, { status: 400 });
     }
 
+    // --- Added Check for PIX Key ---
+    const pixKey = process.env.GN_PIX_KEY;
+    if (!pixKey) {
+        console.error("❌ [Erro Configuração] Variável de ambiente GN_PIX_KEY não definida.");
+        return NextResponse.json({ error: "Erro interno de configuração do servidor (PIX Key ausente)" }, { status: 500 });
+    }
+    // --- End Added Check ---
+
     const reqGN = await GNRequest();
 
     const dataCob = {
       calendario: { expiracao: 3600 },
       valor: { original: valor }, // Usar o valor recebido
-      chave: process.env.GN_PIX_KEY,
+      chave: pixKey, // Use the validated pixKey variable
       solicitacaoPagador: `Compra de coins para ${characterName}`, // Mensagem personalizada
       infoAdicionais: [ // Adicionar informações extras para o webhook
         { nome: "characterName", valor: characterName }
@@ -37,12 +45,12 @@ export async function POST(req: NextRequest) {
       await prisma.pixWebhook.create({
         data: {
           txid: txid,
-          // endToEndId: '', // Será preenchido pelo webhook, não precisa definir aqui
+          // endToEndId: '', // This field is missing, causing the error
           valor: parseFloat(valor),
-          chave: process.env.GN_PIX_KEY || undefined, // Usar a chave ou undefined
-          horario: new Date(), // Horário da criação da cobrança
-          status: 'PENDING', // Status inicial
-          characterName: characterName, // Salvar o characterName aqui
+          chave: pixKey,
+          horario: new Date(),
+          status: 'PENDING',
+          characterName: characterName,
         }
       });
       console.log(`[API Pix] Cobrança criada e registrada no DB para txid: ${txid}, character: ${characterName}`);

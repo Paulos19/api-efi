@@ -1,12 +1,20 @@
 "use client";
 
 import React from 'react';
+// Importe o tipo Character gerado pelo Prisma se disponível
+// import { Character as PrismaCharacter } from '@prisma/client';
 
+// Ou defina uma interface que corresponda à estrutura esperada dos dados da API
 interface Character {
     name: string;
-    classname: string | null;
-    level: number | null;
-    coins: number | null;
+    classname: string | null; // Ajuste os tipos conforme seu schema Prisma
+    level: number | null;     // Ajuste os tipos conforme seu schema Prisma
+    // Presumindo que 'coins' venha da conta relacionada
+    accountRel?: {             // Use o nome da relação correta do seu schema
+        coins: number | null; // Ajuste o tipo conforme seu schema Prisma
+    } | null;
+    // Ou se 'coins' for diretamente no Character
+    // coins: number | null;
 }
 
 interface CharacterListProps {
@@ -33,7 +41,10 @@ const CharacterList: React.FC<CharacterListProps> = ({ characters, selectedChara
                         Classe: {char.classname || 'N/A'} - Level: {char.level ?? 'N/A'}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Coins: {char.coins ?? 0}
+                        {/* Ajuste para acessar coins da conta relacionada, se necessário */}
+                        Coins: {char.accountRel?.coins ?? 0}
+                        {/* Ou se 'coins' for direto no Character: */}
+                        {/* Coins: {char.coins ?? 0} */}
                     </p>
                 </li>
             ))}
